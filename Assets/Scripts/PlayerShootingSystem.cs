@@ -3,6 +3,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using Unity.Burst;
 using UnityEngine;
+using Unity.Rendering;
 
 /// <summary>
 /// System that handles player shooting mechanics
@@ -49,6 +50,22 @@ public partial struct PlayerShootingSystem : ISystem
                 Lifetime = 0f,
                 MaxLifetime = 3f
             });
+            
+            // Add rendering components if rendering data is available
+            var renderDataQuery = SystemAPI.QueryBuilder().WithAll<RenderingData>().Build();
+            if (renderDataQuery.CalculateEntityCount() > 0)
+            {
+                var renderData = SystemAPI.GetSingleton<RenderingData>();
+                var renderMeshArray = new RenderMeshArray(new UnityEngine.Material[] { renderData.BulletMaterial }, 
+                                                         new UnityEngine.Mesh[] { renderData.SphereMesh });
+                var renderMeshDescription = new RenderMeshDescription
+                {
+                    FilterSettings = RenderFilterSettings.Default,
+                    LightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off
+                };
+                
+                RenderMeshUtility.AddComponents(bulletEntity, entityManager, renderMeshDescription, renderMeshArray, MaterialMeshIndex.Default);
+            }
             
             // Update player's last shoot time
             var updatedPlayer = player.ValueRO;

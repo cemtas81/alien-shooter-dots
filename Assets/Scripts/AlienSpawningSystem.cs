@@ -3,6 +3,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Rendering;
 
 /// <summary>
 /// System that handles alien spawning
@@ -64,6 +65,22 @@ public partial struct AlienSpawningSystem : ISystem
                 Speed = _random.NextFloat(3f, 8f),
                 Direction = randomDirection
             });
+            
+            // Add rendering components if rendering data is available
+            var renderDataQuery = SystemAPI.QueryBuilder().WithAll<RenderingData>().Build();
+            if (renderDataQuery.CalculateEntityCount() > 0)
+            {
+                var renderData = SystemAPI.GetSingleton<RenderingData>();
+                var renderMeshArray = new RenderMeshArray(new UnityEngine.Material[] { renderData.AlienMaterial }, 
+                                                         new UnityEngine.Mesh[] { renderData.SphereMesh });
+                var renderMeshDescription = new RenderMeshDescription
+                {
+                    FilterSettings = RenderFilterSettings.Default,
+                    LightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off
+                };
+                
+                RenderMeshUtility.AddComponents(alienEntity, entityManager, renderMeshDescription, renderMeshArray, MaterialMeshIndex.Default);
+            }
             
             // Update spawner's last spawn time
             var updatedSpawner = spawner.ValueRO;
